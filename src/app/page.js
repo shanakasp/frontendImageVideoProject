@@ -22,6 +22,8 @@ export default function MediaUploader() {
   const streamRef = useRef(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
+  // Add state for camera facing mode
+  const [facingMode, setFacingMode] = useState("user"); // "user" is front camera, "environment" is back camera
 
   const mediaRecorderRef = useRef(null);
   const [isBrowserReady, setIsBrowserReady] = useState(false);
@@ -56,7 +58,7 @@ export default function MediaUploader() {
       }
 
       const constraints = {
-        video: true,
+        video: { facingMode: facingMode },
         audio: isVideo,
       };
 
@@ -99,6 +101,19 @@ export default function MediaUploader() {
     } catch (error) {
       console.error("Error accessing camera:", error);
       alert("Failed to access camera: " + error.message);
+    }
+  };
+
+  // Add function to switch cameras
+  const switchCamera = async () => {
+    // Toggle facing mode
+    const newFacingMode = facingMode === "user" ? "environment" : "user";
+    setFacingMode(newFacingMode);
+
+    // Restart camera with new facing mode if camera is currently active
+    if (currentType) {
+      const isVideoMode = isRecording || currentType.includes("video");
+      await startCamera(currentType, isVideoMode);
     }
   };
 
@@ -419,9 +434,20 @@ export default function MediaUploader() {
         </div>
       </div>
 
-      {/* Camera Video Element */}
+      {/* Camera Video Element with Switch Camera Button */}
       <div className={`mt-8 ${currentType ? "block" : "hidden"}`}>
-        <h3 className="text-lg font-medium mb-2">Camera Preview</h3>
+        <div className="flex justify-between items-center mb-2">
+          <h3 className="text-lg font-medium">Camera Preview</h3>
+          <button
+            onClick={switchCamera}
+            className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 flex items-center"
+          >
+            <span className="mr-1">Switch Camera</span>
+            <span className="text-xs">
+              ({facingMode === "user" ? "Front" : "Back"})
+            </span>
+          </button>
+        </div>
         <video
           ref={videoRef}
           autoPlay
