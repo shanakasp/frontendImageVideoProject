@@ -20,6 +20,9 @@ export default function MediaUploader() {
   const [currentType, setCurrentType] = useState(null);
   const videoRef = useRef(null);
   const streamRef = useRef(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
+
   const mediaRecorderRef = useRef(null);
   const [isBrowserReady, setIsBrowserReady] = useState(false);
 
@@ -154,24 +157,54 @@ export default function MediaUploader() {
     formData.append("file", file);
     formData.append("type", type);
 
+    setIsUploading(true); // Show loading state
+    setUploadProgress(0); // Reset progress
+
     try {
       const { data } = await axios.post(
         "http://localhost:5000/upload",
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },
+          onUploadProgress: (progressEvent) => {
+            if (progressEvent.total) {
+              const progress = Math.round(
+                (progressEvent.loaded / progressEvent.total) * 100
+              );
+              setUploadProgress(progress); // Update progress state
+            }
+          },
         }
       );
-      alert(`${type} uploaded successfully: ${data.url}`);
+      alert(`${type} uploaded successfully:`);
     } catch (error) {
       alert(`Upload failed: ${error.message}`);
+    } finally {
+      setIsUploading(false); // Hide loading state after upload
     }
   };
 
   return (
     <div className="max-w-4xl mx-auto p-6">
       <h1 className="text-3xl font-bold mb-8 text-center">Media Upload App</h1>
-
+      {isUploading && (
+        <div className="mt-4">
+          <div className="relative pt-1">
+            <div className="flex mb-2 items-center justify-between">
+              <span className="text-sm font-semibold">Uploading...</span>
+              <span className="text-sm font-semibold">{uploadProgress}%</span>
+            </div>
+            <div className="flex mb-2 items-center justify-between">
+              <div className="w-full bg-gray-200 rounded-full h-2.5">
+                <div
+                  className="bg-blue-600 h-2.5 rounded-full"
+                  style={{ width: `${uploadProgress}%` }}
+                ></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Image 1 */}
         <div className="border p-4 rounded-lg">
